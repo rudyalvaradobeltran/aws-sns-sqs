@@ -5,5 +5,8 @@ import { S3Stack } from '../lib/s3Stack';
 import { LambdaMainStack } from '../lib/lambdaMainStack';
 
 const app = new cdk.App();
-new S3Stack(app, 'S3Stack');
-new LambdaMainStack(app, 'LambdaMainStack');
+const s3 = new S3Stack(app, 'S3Stack');
+new LambdaMainStack(app, 'LambdaMainStack', {
+  s3Source: s3.s3Source,
+  s3ArnForObjects: s3.s3ArnForObjects
+});
