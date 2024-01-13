@@ -1,12 +1,7 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { S3Stack } from '../lib/s3Stack';
-import { LambdaMainStack } from '../lib/lambdaMainStack';
+import { S3LambdaStack } from '../lib/s3LambdaStack';
 
 const app = new cdk.App();
-const s3 = new S3Stack(app, 'S3Stack');
-new LambdaMainStack(app, 'LambdaMainStack', {
-  s3Source: s3.s3Source,
-  s3ArnForObjects: s3.s3ArnForObjects
-});
+new S3LambdaStack(app, 'S3LambdaMainStack');
