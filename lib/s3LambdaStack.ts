@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
-import { S3EventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { EventType } from 'aws-cdk-lib/aws-s3';
 import { join } from 'path';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -21,7 +21,13 @@ export class S3LambdaStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY
     });
 
-    const sqsFailedEventQueue = new Queue(this, 'sqs-failed-event-queue');
+    const snsTopic = new Topic(this, "snsTopic");
+
+    s3Bucket.addEventNotification(EventType.OBJECT_CREATED, new SnsDestination(snsTopic));
+
+    const sqsFailedEventQueue = new Queue(this, 'sqs-failed-event-queue', {
+      retentionPeriod: cdk.Duration.minutes(5)
+    });
 
     const sqsEventQueue = new Queue(this, 'sqs-event-queue', {
       deadLetterQueue: {
@@ -29,20 +35,15 @@ export class S3LambdaStack extends cdk.Stack {
         maxReceiveCount: 3
       }
     });
-
-    const snsTopic = new Topic(this, "snsTopic");
-
+    
     snsTopic.addSubscription(new SqsSubscription(sqsEventQueue));
-
-    s3Bucket.addEventNotification(EventType.OBJECT_CREATED, new SnsDestination(snsTopic));
 
     const lambdaMain = new NodejsFunction(this, 'lambda-main', {
       entry: (join(__dirname, '..', 'src', 'lambda-main', 'index.ts')),
     });
 
-    const s3Source = new S3EventSource(s3Bucket, {
-      events: [EventType.OBJECT_CREATED],
-    });
+    const sqsSource = new SqsEventSource(sqsEventQueue);
+    // possible set: batchSize & maxConcurrency
 
     lambdaMain.addToRolePolicy(new PolicyStatement({
       sid: "s3BucketLambdaMainPermission",
@@ -51,6 +52,6 @@ export class S3LambdaStack extends cdk.Stack {
       actions: ["s3:GetObject"]
     }));
 
-    lambdaMain.addEventSource(s3Source);
+    lambdaMain.addEventSource(sqsSource);
   }
 }
