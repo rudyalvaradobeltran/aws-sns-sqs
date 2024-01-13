@@ -6,6 +6,10 @@ import { EventType } from 'aws-cdk-lib/aws-s3';
 import { join } from 'path';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { Topic } from 'aws-cdk-lib/aws-sns';
+import { SnsDestination } from 'aws-cdk-lib/aws-s3-notifications';
+import { Queue } from 'aws-cdk-lib/aws-sqs';
+import { SqsSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 
 export class S3LambdaStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -16,6 +20,21 @@ export class S3LambdaStack extends cdk.Stack {
       autoDeleteObjects: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY
     });
+
+    const sqsFailedEventQueue = new Queue(this, 'sqs-failed-event-queue');
+
+    const sqsEventQueue = new Queue(this, 'sqs-event-queue', {
+      deadLetterQueue: {
+        queue: sqsFailedEventQueue,
+        maxReceiveCount: 3
+      }
+    });
+
+    const snsTopic = new Topic(this, "snsTopic");
+
+    snsTopic.addSubscription(new SqsSubscription(sqsEventQueue));
+
+    s3Bucket.addEventNotification(EventType.OBJECT_CREATED, new SnsDestination(snsTopic));
 
     const lambdaMain = new NodejsFunction(this, 'lambda-main', {
       entry: (join(__dirname, '..', 'src', 'lambda-main', 'index.ts')),

@@ -16,3 +16,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 ## Upload file to S3 bucket
 
 `aws s3 cp example.txt s3://aws-sqs-sns-bucket`
+
+## AWS diagram
+
+![Diagram](image.png)
