@@ -1,8 +1,6 @@
-# Welcome to your CDK TypeScript project
+# AWS SNS SQS
 
-This is a blank project for CDK development with TypeScript.
-
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+File upload to S3 bucket using SNS topic, SQS queues and lambda function.
 
 ## Useful commands
 
